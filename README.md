@@ -11,6 +11,18 @@ Tested on Intel Arc Pro B70 (BMG-G31, 32 GB), vLLM 0.26.1 XPU
 (`intel/llm-scaler-vllm:0.26.0-b2@sha256:52218ad85513ab6686d4c090c83c2bd8c5b02423c63aa4dabd41837fe641fe3b`),
 host kernel 7.1.8 (xe), compute-runtime 26.31.39395.13, IGC 2.40.13, Level Zero loader 1.32.0.
 
+**Provenance.** This repo is the living continuation of
+[sybil-solutions/exl3xpu](https://github.com/sybil-solutions/exl3xpu) (last push 2026-09-26;
+archived and read-only). The exl3xpu plugin code, image build and validated B70 recipe also live in
+[trellis-serve](https://github.com/sybil-solutions/trellis-serve) (`xpu/exl3xpu/`),
+[local-ai-images](https://github.com/sybil-solutions/local-ai-images) (`exl3xpu/`) and
+[local-ai-registry](https://github.com/sybil-solutions/local-ai-registry); none of the three
+carries the mamba overlap-copy fix as of 2026-11-27 (org-wide code search: 0 hits for
+`is_left_overlap` / `debug_barrier`). This repo does: the barrier from
+[vllm-project/vllm#50729](https://github.com/vllm-project/vllm/pull/50729) is applied at image
+build time by `docker/Dockerfile` using `docker/patches/mamba-50729-barrier.patch`, with field
+evidence in [`docs/mamba-50729-evidence.md`](docs/mamba-50729-evidence.md).
+
 ## Results: Qwen3.8-27B EXL3 4.00bpw, one B70
 
 Config [`models/qwen3.8-27b-exl3-4.00bpw/model.yaml`](models/qwen3.8-27b-exl3-4.00bpw/model.yaml):
