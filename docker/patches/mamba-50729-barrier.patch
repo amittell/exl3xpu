@@ -1,0 +1,35 @@
+--- a/vllm/v1/worker/mamba_utils.py
++++ b/vllm/v1/worker/mamba_utils.py
+@@ -114,12 +114,15 @@
+         src_addr = state_base_addr + src_block_id * state_block_stride + src_offset
+         num_elems_to_copy = (conv_width - token_bias).to(tl.int64) * state_inner_size
+         copy_size = num_elems_to_copy * state_elem_size
++        is_left_overlap = src_addr > dst_addr and src_addr < dst_addr + copy_size
+         offsets = tl.arange(0, COPY_BLOCK_SIZE)
+         for i in range(0, copy_size, COPY_BLOCK_SIZE):
+             mask = (i + offsets) < copy_size
+             curr_src = (src_addr + i + offsets).to(tl.pointer_type(tl.uint8))
+             curr_dst = (dst_addr + i + offsets).to(tl.pointer_type(tl.uint8))
+             data = tl.load(curr_src, mask=mask)
++            if is_left_overlap:
++                tl.debug_barrier()
+             tl.store(curr_dst, data, mask=mask)
+         return
+ 
+@@ -412,6 +415,7 @@
+     src_ptr = tl.load(src_ptrs + pid)
+     dst_ptr = tl.load(dst_ptrs + pid)
+     size = tl.load(sizes + pid)
++    is_left_overlap = dst_ptr < src_ptr and dst_ptr + size > src_ptr
+ 
+     offsets = tl.arange(0, BLOCK_SIZE)
+     for i in range(0, size, BLOCK_SIZE):
+@@ -421,6 +425,8 @@
+         curr_dst_ptr = (dst_ptr + i + offsets).to(tl.pointer_type(tl.uint8))
+ 
+         data = tl.load(curr_src_ptr, mask=mask)
++        if is_left_overlap:
++            tl.debug_barrier()
+         tl.store(curr_dst_ptr, data, mask=mask)
+ 
+ 
